@@ -198,27 +198,39 @@ async function getNextQuestion() {
   document.getElementById('ai-text').textContent = 'Thinking...';
 
   try {
-    const prompt = conversationHistory.length === 1
-      ? "Start the interview with the opening question."
-      : `The employee answered: "${currentAnswer}". Ask the next most relevant question. If you've covered all 8 core topics or this is question ${MAX_QUESTIONS}, end warmly by saying INTERVIEW_COMPLETE and thank them.`;
-
-    conversationHistory.push({ role: "user", parts: [{ text: prompt }] });
+    const isFirst = conversationHistory.length === 0;
+    
+    if (isFirst) {
+      conversationHistory.push({ 
+        role: "user", 
+        parts: [{ text: SYSTEM_PROMPTS[selectedLang] + "\n\nStart the interview now with your opening question." }] 
+      });
+    } else {
+      conversationHistory.push({ 
+        role: "user", 
+        parts: [{ text: `Employee answered: "${currentAnswer}". This was question ${questionIndex} of ${MAX_QUESTIONS}. ${questionIndex >= MAX_QUESTIONS ? 'This is the last question. Thank them warmly and say INTERVIEW_COMPLETE.' : 'Ask the next relevant question based on their answer and what topics remain uncovered.'}` }] 
+      });
+    }
 
     const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ contents: conversationHistory, generationConfig: { temperature: 0.7, maxOutputTokens: 200 } })
+      body: JSON.stringify({ 
+        contents: conversationHistory,
+        generationConfig: { temperature: 0.7, maxOutputTokens: 200 } 
+      })
     });
 
     const data = await res.json();
-    const aiResponse = data.candidates?.[0]?.content?.parts?.[0]?.text || "I'm ready for your next answer.";
+    const aiResponse = data.candidates?.[0]?.content?.parts?.[0]?.text || "Thank you for sharing. Could you tell me more?";
+    
     conversationHistory.push({ role: "model", parts: [{ text: aiResponse }] });
 
     if (aiResponse.includes('INTERVIEW_COMPLETE')) {
       const cleanMsg = aiResponse.replace('INTERVIEW_COMPLETE', '').trim();
       document.getElementById('ai-text').textContent = cleanMsg;
       await speakText(cleanMsg);
-      setTimeout(showComplete, 2000);
+      setTimeout(showComplete, 3000);
       return;
     }
 
@@ -231,11 +243,11 @@ async function getNextQuestion() {
     currentAnswer = "";
 
   } catch (err) {
+    console.error(err);
     showError("Could not connect to AI. Please check your internet and API key.");
     setMicEnabled(true);
   }
 }
-
 async function speakText(text) {
   try {
     document.getElementById('speaking-indicator').classList.add('active');
