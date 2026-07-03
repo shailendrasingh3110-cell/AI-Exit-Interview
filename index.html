@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Exit Interview | Team Computers</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Segoe UI', Arial, sans-serif; background: #f0f4f8; min-height: 100vh; display: flex; align-items: center; justify-content: center; }
+  .container { background: white; border-radius: 16px; padding: 40px; max-width: 680px; width: 95%; box-shadow: 0 8px 32px rgba(0,0,0,0.12); }
+  .logo { text-align: center; margin-bottom: 8px; }
+  .logo h1 { color: #1F3864; font-size: 22px; font-weight: 700; }
+  .logo p { color: #666; font-size: 14px; margin-top: 4px; }
+  .divider { height: 2px; background: linear-gradient(90deg, #1F3864, #4472C4); border-radius: 2px; margin: 20px 0; }
+  
+  /* SCREENS */
+  .screen { display: none; }
+  .screen.active { display: block; }
+
+  /* LANGUAGE SCREEN */
+  .lang-title { text-align: center; color: #1F3864; font-size: 18px; font-weight: 600; margin-bottom: 8px; }
+  .lang-subtitle { text-align: center; color: #666; font-size: 14px; margin-bottom: 24px; }
+  .lang-buttons { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+  .lang-btn { padding: 14px 28px; border: 2px solid #1F3864; border-radius: 10px; background: white; color: #1F3864; font-size: 15px; font-weight: 600; cursor: pointer; transition: all 0.2s; }
+  .lang-btn:hover, .lang-btn.selected { background: #1F3864; color: white; }
+  .start-btn { display: block; width: 100%; margin-top: 24px; padding: 16px; background: #1F3864; color: white; border: none; border-radius: 10px; font-size: 16px; font-weight: 600; cursor: pointer; transition: background 0.2s; }
+  .start-btn:hover { background: #2a4a8a; }
+  .start-btn:disabled { background: #aaa; cursor: not-allowed; }
+
+  /* INTERVIEW SCREEN */
+  .interview-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+  .progress-text { color: #666; font-size: 13px; }
+  .progress-bar { height: 6px; background: #e0e0e0; border-radius: 3px; margin-bottom: 24px; }
+  .progress-fill { height: 100%; background: linear-gradient(90deg, #1F3864, #4472C4); border-radius: 3px; transition: width 0.4s; }
+  
+  .ai-bubble { background: #f0f4f8; border-radius: 12px; padding: 20px; margin-bottom: 20px; position: relative; }
+  .ai-label { font-size: 11px; color: #1F3864; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; }
+  .ai-text { color: #222; font-size: 16px; line-height: 1.6; min-height: 40px; }
+  .speaking-indicator { display: none; align-items: center; gap: 6px; margin-top: 10px; }
+  .speaking-indicator.active { display: flex; }
+  .dot { width: 8px; height: 8px; border-radius: 50%; background: #1F3864; animation: bounce 0.8s infinite; }
+  .dot:nth-child(2) { animation-delay: 0.15s; }
+  .dot:nth-child(3) { animation-delay: 0.3s; }
+  @keyframes bounce { 0%,80%,100%{transform:scale(0.6);opacity:0.4} 40%{transform:scale(1);opacity:1} }
+
+  .mic-section { text-align: center; margin: 20px 0; }
+  .mic-btn { width: 72px; height: 72px; border-radius: 50%; border: none; background: #1F3864; color: white; font-size: 28px; cursor: pointer; transition: all 0.2s; box-shadow: 0 4px 16px rgba(31,56,100,0.3); }
+  .mic-btn:hover { transform: scale(1.08); }
+  .mic-btn.recording { background: #c0392b; animation: pulse 1.2s infinite; }
+  .mic-btn:disabled { background: #aaa; cursor: not-allowed; transform: none; box-shadow: none; }
+  @keyframes pulse { 0%,100%{box-shadow:0 0 0 0 rgba(192,57,43,0.4)} 50%{box-shadow:0 0 0 16px rgba(192,57,43,0)} }
+  .mic-hint { color: #888; font-size: 13px; margin-top: 10px; }
+
+  .user-answer { background: #e8f0fe; border-radius: 12px; padding: 16px; margin-bottom: 16px; display: none; }
+  .user-label { font-size: 11px; color: #4472C4; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px; }
+  .user-text { color: #222; font-size: 15px; line-height: 1.5; }
+  .submit-answer { display: none; width: 100%; padding: 13px; background: #4472C4; color: white; border: none; border-radius: 8px; font-size: 15px; font-weight: 600; cursor: pointer; margin-top: 10px; }
+  .submit-answer:hover { background: #2a5aaa; }
+
+  /* COMPLETE SCREEN */
+  .complete-icon { text-align: center; font-size: 56px; margin-bottom: 16px; }
+  .complete-title { text-align: center; color: #1F3864; font-size: 22px; font-weight: 700; margin-bottom: 10px; }
+  .complete-msg { text-align: center; color: #555; font-size: 15px; line-height: 1.6; margin-bottom: 24px; }
+  .transcript-box { background: #f8f9fa; border-radius: 10px; padding: 20px; max-height: 320px; overflow-y: auto; font-size: 13px; color: #333; line-height: 1.7; border: 1px solid #e0e0e0; }
+  .transcript-box .q { color: #1F3864; font-weight: 600; margin-top: 12px; }
+  .transcript-box .a { color: #333; margin-left: 12px; }
+  .copy-btn { display: block; width: 100%; margin-top: 16px; padding: 13px; background: #1F3864; color: white; border: none; border-radius: 8px; font-size: 15px; font-weight: 600; cursor: pointer; }
+
+  /* LOADING */
+  .loading { text-align: center; padding: 20px; color: #666; font-size: 14px; }
+  .spinner { width: 32px; height: 32px; border: 3px solid #e0e0e0; border-top-color: #1F3864; border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 12px; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .error-msg { color: #c0392b; background: #fdecea; border-radius: 8px; padding: 12px; font-size: 14px; margin-top: 10px; display: none; }
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="logo">
+    <h1>🏢 Team Computers</h1>
+    <p>Confidential Exit Interview — AI Powered</p>
+  </div>
+  <div class="divider"></div>
+
+  <!-- LANGUAGE SCREEN -->
+  <div class="screen active" id="screen-lang">
+    <p class="lang-title">Welcome</p>
+    <p class="lang-subtitle">This is a completely anonymous and confidential interview. Please speak freely — your honest feedback helps us improve.</p>
+    <p class="lang-title" style="margin-top:20px;">Choose your preferred language</p>
+    <div class="lang-buttons" style="margin-top:16px;">
+      <button class="lang-btn" onclick="selectLang('english', this)">English</button>
+      <button class="lang-btn" onclick="selectLang('hindi', this)">Hindi</button>
+      <button class="lang-btn" onclick="selectLang('hinglish', this)">Hinglish</button>
+    </div>
+    <button class="start-btn" id="start-btn" onclick="startInterview()" disabled>Start Interview →</button>
+    <p style="text-align:center;font-size:12px;color:#aaa;margin-top:16px;">Your name is not recorded. All responses are anonymous.</p>
+  </div>
+
+  <!-- INTERVIEW SCREEN -->
+  <div class="screen" id="screen-interview">
+    <div class="interview-header">
+      <span class="progress-text" id="progress-text">Question 1 of 8</span>
+      <span style="font-size:12px;color:#aaa;">🔒 Anonymous</span>
+    </div>
+    <div class="progress-bar"><div class="progress-fill" id="progress-fill" style="width:12%"></div></div>
+
+    <div class="ai-bubble">
+      <div class="ai-label">🤖 AI Interviewer</div>
+      <div class="ai-text" id="ai-text">Loading your first question...</div>
+      <div class="speaking-indicator" id="speaking-indicator">
+        <div class="dot"></div><div class="dot"></div><div class="dot"></div>
+        <span style="font-size:12px;color:#1F3864;margin-left:4px;">Speaking...</span>
+      </div>
+    </div>
+
+    <div class="user-answer" id="user-answer-box">
+      <div class="user-label">✅ Your Answer</div>
+      <div class="user-text" id="user-text"></div>
+    </div>
+
+    <div class="mic-section">
+      <button class="mic-btn" id="mic-btn" onclick="toggleMic()">🎤</button>
+      <p class="mic-hint" id="mic-hint">Press the mic and speak your answer</p>
+    </div>
+
+    <button class="submit-answer" id="submit-btn" onclick="submitAnswer()">Submit Answer & Next →</button>
+    <div class="error-msg" id="error-msg"></div>
+  </div>
+
+  <!-- COMPLETE SCREEN -->
+  <div class="screen" id="screen-complete">
+    <div class="complete-icon">✅</div>
+    <p class="complete-title">Thank You!</p>
+    <p class="complete-msg">Your feedback has been recorded anonymously. It will help Team Computers create a better workplace for everyone.</p>
+    <div class="transcript-box" id="transcript-box"></div>
+    <button class="copy-btn" onclick="copyTranscript()">📋 Copy Full Transcript</button>
+  </div>
+</div>
+
+<script>
+// ============================================================
+// CONFIGURATION — PASTE YOUR API KEYS BELOW
+// ============================================================
+const GEMINI_API_KEY = "PASTE_YOUR_GEMINI_API_KEY_HERE";
+const ELEVENLABS_API_KEY = "PASTE_YOUR_ELEVENLABS_API_KEY_HERE";
+const ELEVENLABS_VOICE_ID = "EXAVITQu4vr4xnSDxMaL"; // "Sarah" - professional neutral voice
+// ============================================================
+
+let selectedLang = null;
+let questionIndex = 0;
+let conversationHistory = [];
+let transcript = [];
+let recognition = null;
+let isRecording = false;
+let currentAnswer = "";
+const MAX_QUESTIONS = 8;
+
+const SYSTEM_PROMPTS = {
+  english: `You are a compassionate, professional AI exit interviewer for Team Computers, an IT company. 
+Your job is to conduct a structured yet conversational exit interview. 
+Ask one clear question at a time. Based on the employee's answer, ask a relevant follow-up if something important needs exploring — otherwise move to the next core topic.
+Core topics to cover (in order, but naturally): reason for leaving, manager relationship, growth opportunities, team/culture experience, what the company did well, what could have been better, recommendation likelihood, final message to leadership.
+Keep responses SHORT — 1-2 sentences max. Sound warm and human, not robotic.
+This is completely anonymous. Encourage honesty gently.
+Start with: "Thank you for taking the time to share your experience with us. To begin — what is the primary reason you have decided to leave Team Computers?"`,
+
+  hindi: `Aap Team Computers ke liye ek samvedansheel, professional AI exit interviewer hain.
+Aapka kaam ek structured lekin conversational exit interview conduct karna hai — Hindi mein.
+Ek baar mein ek hi sawaal poochein. Employee ke jawab ke hisaab se relevant follow-up karein ya agla topic cover karein.
+Core topics: jaane ka kaaran, manager ke saath rishta, growth ke mauqe, team/culture, company ne kya achha kiya, kya behtar ho sakta tha, recommendation, leadership ko sandesh.
+Jawab CHHOTA rakhein — 1-2 sentences. Friendly aur natural lagein.
+Shuru karein: "Apna experience share karne ke liye shukriya. Pehla sawaal — aapne Team Computers chhod ne ka mukhya kaaran kya hai?"`,
+
+  hinglish: `Aap Team Computers ke liye ek compassionate AI exit interviewer hain. Hinglish mein baat karein — jaise India mein professionals normally baat karte hain (mix of Hindi and English, natural aur friendly tone).
+Ek question at a time. Answer ke basis pe follow-up ya next topic pe jao.
+Cover karna hai: leaving reason, manager relationship, growth, culture, company ki strengths, improvements, recommendation, final message.
+Response CHHOTA rakho — 1-2 sentences. Warm aur genuine lagao.
+Start with: "Apna time dene ke liye thank you. Toh seedha pehle question pe chalte hain — aapne Team Computers chhorne ka main reason kya hai?"`,
+};
+
+function selectLang(lang, btn) {
+  selectedLang = lang;
+  document.querySelectorAll('.lang-btn').forEach(b => b.classList.remove('selected'));
+  btn.classList.add('selected');
+  document.getElementById('start-btn').disabled = false;
+}
+
+async function startInterview() {
+  showScreen('screen-interview');
+  conversationHistory = [{ role: "user", parts: [{ text: SYSTEM_PROMPTS[selectedLang] }] }];
+  await getNextQuestion();
+}
+
+async function getNextQuestion() {
+  setMicEnabled(false);
+  document.getElementById('submit-btn').style.display = 'none';
+  document.getElementById('user-answer-box').style.display = 'none';
+  document.getElementById('ai-text').textContent = 'Thinking...';
+
+  try {
+    const prompt = conversationHistory.length === 1
+      ? "Start the interview with the opening question."
+      : `The employee answered: "${currentAnswer}". Ask the next most relevant question. If you've covered all 8 core topics or this is question ${MAX_QUESTIONS}, end warmly by saying INTERVIEW_COMPLETE and thank them.`;
+
+    conversationHistory.push({ role: "user", parts: [{ text: prompt }] });
+
+    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ contents: conversationHistory, generationConfig: { temperature: 0.7, maxOutputTokens: 200 } })
+    });
+
+    const data = await res.json();
+    const aiResponse = data.candidates?.[0]?.content?.parts?.[0]?.text || "I'm ready for your next answer.";
+    conversationHistory.push({ role: "model", parts: [{ text: aiResponse }] });
+
+    if (aiResponse.includes('INTERVIEW_COMPLETE')) {
+      const cleanMsg = aiResponse.replace('INTERVIEW_COMPLETE', '').trim();
+      document.getElementById('ai-text').textContent = cleanMsg;
+      await speakText(cleanMsg);
+      setTimeout(showComplete, 2000);
+      return;
+    }
+
+    questionIndex++;
+    updateProgress();
+    document.getElementById('ai-text').textContent = aiResponse;
+    await speakText(aiResponse);
+    setMicEnabled(true);
+    document.getElementById('mic-hint').textContent = 'Press the mic and speak your answer';
+    currentAnswer = "";
+
+  } catch (err) {
+    showError("Could not connect to AI. Please check your internet and API key.");
+    setMicEnabled(true);
+  }
+}
+
+async function speakText(text) {
+  try {
+    document.getElementById('speaking-indicator').classList.add('active');
+    const res = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${ELEVENLABS_VOICE_ID}`, {
+      method: 'POST',
+      headers: { 'xi-api-key': ELEVENLABS_API_KEY, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text: text.substring(0, 500), model_id: "eleven_multilingual_v2", voice_settings: { stability: 0.5, similarity_boost: 0.75 } })
+    });
+    if (!res.ok) throw new Error('TTS failed');
+    const blob = await res.blob();
+    const audio = new Audio(URL.createObjectURL(blob));
+    await new Promise(resolve => { audio.onended = resolve; audio.onerror = resolve; audio.play(); });
+  } catch (e) {
+    console.warn('TTS unavailable, continuing silently');
+  } finally {
+    document.getElementById('speaking-indicator').classList.remove('active');
+  }
+}
+
+function toggleMic() {
+  if (isRecording) stopRecording();
+  else startRecording();
+}
+
+function startRecording() {
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SpeechRecognition) {
+    showError("Your browser doesn't support voice input. Please use Chrome.");
+    return;
+  }
+
+  recognition = new SpeechRecognition();
+  recognition.continuous = true;
+  recognition.interimResults = true;
+  recognition.lang = selectedLang === 'hindi' ? 'hi-IN' : 'en-IN';
+
+  recognition.onresult = (e) => {
+    let interim = '', final = '';
+    for (let i = e.resultIndex; i < e.results.length; i++) {
+      if (e.results[i].isFinal) final += e.results[i][0].transcript;
+      else interim += e.results[i][0].transcript;
+    }
+    if (final) currentAnswer += ' ' + final;
+    document.getElementById('user-text').textContent = (currentAnswer + interim).trim();
+    document.getElementById('user-answer-box').style.display = 'block';
+  };
+
+  recognition.onerror = (e) => {
+    if (e.error !== 'no-speech') showError("Microphone error: " + e.error);
+    stopRecording();
+  };
+
+  recognition.start();
+  isRecording = true;
+  document.getElementById('mic-btn').classList.add('recording');
+  document.getElementById('mic-btn').textContent = '⏹';
+  document.getElementById('mic-hint').textContent = 'Listening... press again to stop';
+  document.getElementById('submit-btn').style.display = 'none';
+}
+
+function stopRecording() {
+  if (recognition) recognition.stop();
+  isRecording = false;
+  document.getElementById('mic-btn').classList.remove('recording');
+  document.getElementById('mic-btn').textContent = '🎤';
+  currentAnswer = currentAnswer.trim();
+  if (currentAnswer) {
+    document.getElementById('submit-btn').style.display = 'block';
+    document.getElementById('mic-hint').textContent = 'Answer recorded. Submit or re-record.';
+  } else {
+    document.getElementById('mic-hint').textContent = 'No answer detected. Try again.';
+  }
+}
+
+async function submitAnswer() {
+  if (!currentAnswer.trim()) return;
+  transcript.push({ q: document.getElementById('ai-text').textContent, a: currentAnswer.trim() });
+  document.getElementById('submit-btn').style.display = 'none';
+  setMicEnabled(false);
+  await getNextQuestion();
+}
+
+function updateProgress() {
+  const pct = Math.min((questionIndex / MAX_QUESTIONS) * 100, 100);
+  document.getElementById('progress-fill').style.width = pct + '%';
+  document.getElementById('progress-text').textContent = `Question ${questionIndex} of ${MAX_QUESTIONS}`;
+}
+
+function showComplete() {
+  showScreen('screen-complete');
+  const box = document.getElementById('transcript-box');
+  box.innerHTML = '<div style="font-weight:700;color:#1F3864;margin-bottom:12px;">📋 Full Interview Transcript</div>' +
+    transcript.map((t, i) => `<div class="q">Q${i+1}: ${t.q}</div><div class="a">→ ${t.a}</div>`).join('');
+}
+
+function copyTranscript() {
+  const text = transcript.map((t, i) => `Q${i+1}: ${t.q}\nAnswer: ${t.a}`).join('\n\n');
+  navigator.clipboard.writeText(text).then(() => {
+    document.querySelector('.copy-btn').textContent = '✅ Copied!';
+    setTimeout(() => document.querySelector('.copy-btn').textContent = '📋 Copy Full Transcript', 2000);
+  });
+}
+
+function showScreen(id) { document.querySelectorAll('.screen').forEach(s => s.classList.remove('active')); document.getElementById(id).classList.add('active'); }
+function setMicEnabled(e) { document.getElementById('mic-btn').disabled = !e; }
+function showError(msg) { const el = document.getElementById('error-msg'); el.textContent = msg; el.style.display = 'block'; setTimeout(() => el.style.display = 'none', 5000); }
+</script>
+</body>
+</html>
